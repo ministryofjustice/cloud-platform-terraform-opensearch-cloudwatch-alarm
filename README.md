@@ -2,7 +2,7 @@
 
 [![Releases](https://img.shields.io/github/v/release/ministryofjustice/cloud-platform-terraform-template.svg)](https://github.com/ministryofjustice/cloud-platform-terraform-template/releases)
 
-This Terraform module will _create a ..._ for use on the Cloud Platform.
+This Terraform module will create [OpenSearch CloudWatch alarm](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/cloudwatch-alarms.html) for use on the Cloud Platform.
 
 ## Usage
 
