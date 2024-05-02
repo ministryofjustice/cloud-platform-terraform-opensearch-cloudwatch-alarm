@@ -1,30 +1,47 @@
-# cloud-platform-terraform-template
+# cloud-platform-terraform-opensearch-cloudwatch-alarm
 
-[![Releases](https://img.shields.io/github/v/release/ministryofjustice/cloud-platform-terraform-template.svg)](https://github.com/ministryofjustice/cloud-platform-terraform-template/releases)
+[![Releases](https://img.shields.io/github/release/ministryofjustice/cloud-platform-terraform-opensearch-cloudwatch-alarm/all.svg?style=flat-square)](https://github.com/ministryofjustice/cloud-platform-terraform-opensearch-cloudwatch-alarm/releases)
 
 This Terraform module will create [OpenSearch CloudWatch alarm](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/cloudwatch-alarms.html) for use on the Cloud Platform.
 
 ## Usage
 
 ```hcl
-module "template" {
-  source = "github.com/ministryofjustice/cloud-platform-terraform-template?ref=version" # use the latest release
+module "opensearch_cloudwatch_alarm" {
+  source              = "github.com/ministryofjustice/cloud-platform-terraform-opensearch-cloudwatch-alarm?ref=version" # use the latest release
 
-  # Configuration
-  # ...
-
-  # Tags
-  business_unit          = var.business_unit
-  application            = var.application
-  is_production          = var.is_production
-  team_name              = var.team_name
-  namespace              = var.namespace
-  environment_name       = var.environment
-  infrastructure_support = var.infrastructure_support
+  alarm_name_prefix   = local.<os_domain_name>
+  domain_name         = local.<os_domain_name>
+  sns_topic           = module.baselines.slack_sns_topic
+  min_available_nodes = aws_opensearch_domain.<os_domain_name>.cluster_config[0].instance_count
+  tags                = local.logs_tags
 }
 ```
 
-See the [examples/](examples/) folder for more information.
+
+| Metric name                    | Statistic | Period (second) | ComparisonOperator            | Threshold | EvaluationPeriods |
+|--------------------------------|-----------|-----------------| ------------------------------|-----------|-------------------|
+| ClusterStatus.red              | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| ClusterStatus.yellow           | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| FreeStorageSpace               | Minimum   | 60              | LessThanOrEqualToThreshold    | 20480     | 1                 |
+| ClusterIndexWritesBlocked      | Maximum   | 300             | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| Nodes                          | Minimum   | 86400           | LessThanThreshold             | 1         | 1                 |
+| AutomatedSnapshotFailure       | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| CPUUtilization                 | Maximum   | 900             | GreaterThanOrEqualToThreshold | 80        | 3                 |
+| JVMMemoryPressure              | Maximum   | 60              | GreaterThanOrEqualToThreshold | 95        | 3                 |
+| MasterCPUUtilization           | Maximum   | 900             | GreaterThanOrEqualToThreshold | 50        | 3                 |
+| MasterJVMMemoryPressure        | Maximum   | 60              | GreaterThanOrEqualToThreshold | 95        | 3                 |
+| KMSKeyError                    | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| KMSKeyInaccessible             | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| Shards.active                  | Maximum   | 60              | GreaterThanOrEqualToThreshold | 30000     | 1                 |
+| MasterReachableFromNode        | Maximum   | 86400           | LessThanThreshold             | 1         | 1                 |
+| ThreadpoolWriteQueue           | Average   | 60              | GreaterThanOrEqualToThreshold | 100       | 3                 |
+| ThreadpoolSearchQueue          | Average   | 60              | GreaterThanOrEqualToThreshold | 500       | 1                 |
+| ThreadpoolSearchQueue          | Maximum   | 60              | GreaterThanOrEqualToThreshold | 5000      | 1                 |
+| ThreadpoolWriteRejected        | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| ThreadpoolSearchRejected       | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+
+
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

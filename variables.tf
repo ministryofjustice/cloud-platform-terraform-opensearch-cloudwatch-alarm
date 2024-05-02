@@ -391,7 +391,7 @@ variable "alarm_cpu_utilization_too_high_periods" {
 variable "alarm_jvm_memory_pressure_too_high_periods" {
   description = "The number of periods which it must be in the alarmed state to alert"
   type        = number
-  default     = 1
+  default     = 3
 }
 
 variable "alarm_master_cpu_utilization_too_high_periods" {
@@ -403,7 +403,7 @@ variable "alarm_master_cpu_utilization_too_high_periods" {
 variable "alarm_master_jvm_memory_pressure_too_high_periods" {
   description = "The number of periods which it must be in the alarmed state to alert"
   type        = number
-  default     = 1
+  default     = 3
 }
 
 variable "alarm_kms_periods" {
@@ -427,7 +427,7 @@ variable "alarm_unreachable_master_node_periods" {
 variable "alarm_threadpool_write_queue_too_high_periods" {
   description = "The number of periods to alert that threadpool write queue is too high.  Default: 1, raise this to be less noisy, as this can occur often for only 1 period"
   type        = number
-  default     = 1
+  default     = 3
 }
 
 variable "alarm_threadpool_search_queue_too_high_periods" {
