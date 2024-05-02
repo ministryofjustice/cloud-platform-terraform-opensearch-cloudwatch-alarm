@@ -1,30 +1,47 @@
-# cloud-platform-terraform-template
+# cloud-platform-terraform-opensearch-cloudwatch-alarm
 
-[![Releases](https://img.shields.io/github/v/release/ministryofjustice/cloud-platform-terraform-template.svg)](https://github.com/ministryofjustice/cloud-platform-terraform-template/releases)
+[![Releases](https://img.shields.io/github/release/ministryofjustice/cloud-platform-terraform-opensearch-cloudwatch-alarm/all.svg?style=flat-square)](https://github.com/ministryofjustice/cloud-platform-terraform-opensearch-cloudwatch-alarm/releases)
 
 This Terraform module will create [OpenSearch CloudWatch alarm](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/cloudwatch-alarms.html) for use on the Cloud Platform.
 
 ## Usage
 
 ```hcl
-module "template" {
-  source = "github.com/ministryofjustice/cloud-platform-terraform-template?ref=version" # use the latest release
+module "opensearch_cloudwatch_alarm" {
+  source              = "github.com/ministryofjustice/cloud-platform-terraform-opensearch-cloudwatch-alarm?ref=version" # use the latest release
 
-  # Configuration
-  # ...
-
-  # Tags
-  business_unit          = var.business_unit
-  application            = var.application
-  is_production          = var.is_production
-  team_name              = var.team_name
-  namespace              = var.namespace
-  environment_name       = var.environment
-  infrastructure_support = var.infrastructure_support
+  alarm_name_prefix   = local.<os_domain_name>
+  domain_name         = local.<os_domain_name>
+  sns_topic           = module.baselines.slack_sns_topic
+  min_available_nodes = aws_opensearch_domain.<os_domain_name>.cluster_config[0].instance_count
+  tags                = local.logs_tags
 }
 ```
 
-See the [examples/](examples/) folder for more information.
+
+| Metric name                    | Statistic | Period (second) | ComparisonOperator            | Threshold | EvaluationPeriods |
+|--------------------------------|-----------|-----------------| ------------------------------|-----------|-------------------|
+| ClusterStatus.red              | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| ClusterStatus.yellow           | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| FreeStorageSpace               | Minimum   | 60              | LessThanOrEqualToThreshold    | 20480     | 1                 |
+| ClusterIndexWritesBlocked      | Maximum   | 300             | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| Nodes                          | Minimum   | 86400           | LessThanThreshold             | 1         | 1                 |
+| AutomatedSnapshotFailure       | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| CPUUtilization                 | Maximum   | 900             | GreaterThanOrEqualToThreshold | 80        | 3                 |
+| JVMMemoryPressure              | Maximum   | 60              | GreaterThanOrEqualToThreshold | 95        | 3                 |
+| MasterCPUUtilization           | Maximum   | 900             | GreaterThanOrEqualToThreshold | 50        | 3                 |
+| MasterJVMMemoryPressure        | Maximum   | 60              | GreaterThanOrEqualToThreshold | 95        | 3                 |
+| KMSKeyError                    | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| KMSKeyInaccessible             | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| Shards.active                  | Maximum   | 60              | GreaterThanOrEqualToThreshold | 30000     | 1                 |
+| MasterReachableFromNode        | Maximum   | 86400           | LessThanThreshold             | 1         | 1                 |
+| ThreadpoolWriteQueue           | Average   | 60              | GreaterThanOrEqualToThreshold | 100       | 3                 |
+| ThreadpoolSearchQueue          | Average   | 60              | GreaterThanOrEqualToThreshold | 500       | 1                 |
+| ThreadpoolSearchQueue          | Maximum   | 60              | GreaterThanOrEqualToThreshold | 5000      | 1                 |
+| ThreadpoolWriteRejected        | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+| ThreadpoolSearchRejected       | Maximum   | 60              | GreaterThanOrEqualToThreshold | 1         | 1                 |
+
+
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -88,13 +105,13 @@ No modules.
 | <a name="input_alarm_free_storage_space_total_too_low_period"></a> [alarm\_free\_storage\_space\_total\_too\_low\_period](#input\_alarm\_free\_storage\_space\_total\_too\_low\_period) | The period of the total cluster free storage is too low. The statistics should be applied in seconds | `number` | `60` | no |
 | <a name="input_alarm_free_storage_space_total_too_low_periods"></a> [alarm\_free\_storage\_space\_total\_too\_low\_periods](#input\_alarm\_free\_storage\_space\_total\_too\_low\_periods) | The number of periods to alert that total cluster free storage space is too low.  Default: 1, raise this to be less noisy, as this can occur often for only 1 period | `number` | `1` | no |
 | <a name="input_alarm_jvm_memory_pressure_too_high_period"></a> [alarm\_jvm\_memory\_pressure\_too\_high\_period](#input\_alarm\_jvm\_memory\_pressure\_too\_high\_period) | The period of the JVM memory pressure is too high. The statistics should be applied in seconds | `number` | `900` | no |
-| <a name="input_alarm_jvm_memory_pressure_too_high_periods"></a> [alarm\_jvm\_memory\_pressure\_too\_high\_periods](#input\_alarm\_jvm\_memory\_pressure\_too\_high\_periods) | The number of periods which it must be in the alarmed state to alert | `number` | `1` | no |
+| <a name="input_alarm_jvm_memory_pressure_too_high_periods"></a> [alarm\_jvm\_memory\_pressure\_too\_high\_periods](#input\_alarm\_jvm\_memory\_pressure\_too\_high\_periods) | The number of periods which it must be in the alarmed state to alert | `number` | `3` | no |
 | <a name="input_alarm_kms_period"></a> [alarm\_kms\_period](#input\_alarm\_kms\_period) | The period of the KMS-related metrics. The statistics should be applied in seconds | `number` | `60` | no |
 | <a name="input_alarm_kms_periods"></a> [alarm\_kms\_periods](#input\_alarm\_kms\_periods) | The number of periods to alert that kms has failed.  Default: 1, raise this to be less noisy, as this can occur often for only 1 period | `number` | `1` | no |
 | <a name="input_alarm_master_cpu_utilization_too_high_period"></a> [alarm\_master\_cpu\_utilization\_too\_high\_period](#input\_alarm\_master\_cpu\_utilization\_too\_high\_period) | The period of the CPU utilization of master nodes are too high. The statistics should be applied in seconds | `number` | `900` | no |
 | <a name="input_alarm_master_cpu_utilization_too_high_periods"></a> [alarm\_master\_cpu\_utilization\_too\_high\_periods](#input\_alarm\_master\_cpu\_utilization\_too\_high\_periods) | The number of periods to alert that masters CPU usage is too high.  Default: 3, raise this to be less noisy, as this can occur often for only 1 period | `number` | `3` | no |
 | <a name="input_alarm_master_jvm_memory_pressure_too_high_period"></a> [alarm\_master\_jvm\_memory\_pressure\_too\_high\_period](#input\_alarm\_master\_jvm\_memory\_pressure\_too\_high\_period) | The period of the JVM memory pressure of master nodes are too high. The statistics should be applied in seconds | `number` | `900` | no |
-| <a name="input_alarm_master_jvm_memory_pressure_too_high_periods"></a> [alarm\_master\_jvm\_memory\_pressure\_too\_high\_periods](#input\_alarm\_master\_jvm\_memory\_pressure\_too\_high\_periods) | The number of periods which it must be in the alarmed state to alert | `number` | `1` | no |
+| <a name="input_alarm_master_jvm_memory_pressure_too_high_periods"></a> [alarm\_master\_jvm\_memory\_pressure\_too\_high\_periods](#input\_alarm\_master\_jvm\_memory\_pressure\_too\_high\_periods) | The number of periods which it must be in the alarmed state to alert | `number` | `3` | no |
 | <a name="input_alarm_min_available_nodes_period"></a> [alarm\_min\_available\_nodes\_period](#input\_alarm\_min\_available\_nodes\_period) | The period of the minimum available nodes. The statistics should be applied in seconds | `number` | `86400` | no |
 | <a name="input_alarm_min_available_nodes_periods"></a> [alarm\_min\_available\_nodes\_periods](#input\_alarm\_min\_available\_nodes\_periods) | The number of periods to alert that minimum number of available nodes dropped below a threshold.  Default: 1, raise this to be less noisy, as this can occur often for only 1 period | `number` | `1` | no |
 | <a name="input_alarm_name_postfix"></a> [alarm\_name\_postfix](#input\_alarm\_name\_postfix) | Alarm name suffix, used in the naming of alarms created | `string` | `""` | no |
